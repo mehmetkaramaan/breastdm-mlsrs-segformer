@@ -1,0 +1,25 @@
+Trial 3 Complete [01h 09m 13s]
+val_loss: 0.005533610470592976
+
+Best val_loss So Far: 0.005533610470592976
+Total elapsed time: 03h 05m 38s
+Best learning rate: 0.0001
+Selected expand ratio (not wired into model): 4
+Epoch 1/25
+/usr/local/lib/python3.12/dist-packages/keras/src/saving/saving_lib.py:797: UserWarning: Skipping variable loading for optimizer 'adam', because it has 2 variables whereas the saved optimizer has 426 variables. 
+  saveable.load_own_variables(weights_store.get(inner_path))
+5109/5109 ━━━━━━━━━━━━━━━━━━━━ 0s 267ms/step - accuracy: 0.9989 - dice_coef: 0.5974 - iou: 0.5018 - loss: 0.0048WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`. 
+5109/5109 ━━━━━━━━━━━━━━━━━━━━ 1482s 274ms/step - accuracy: 0.9990 - dice_coef: 0.6720 - iou: 0.5675 - loss: 0.0042 - val_accuracy: 0.9987 - val_dice_coef: 0.5410 - val_iou: 0.4329 - val_loss: 0.0062
+Epoch 2/25
+5109/5109 ━━━━━━━━━━━━━━━━━━━━ 0s 258ms/step - accuracy: 0.9990 - dice_coef: 0.6305 - iou: 0.5337 - loss: 0.0042WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`. 
+5109/5109 ━━━━━━━━━━━━━━━━━━━━ 1336s 262ms/step - accuracy: 0.9991 - dice_coef: 0.6961 - iou: 0.5931 - loss: 0.0038 - val_accuracy: 0.9988 - val_dice_coef: 0.5902 - val_iou: 0.4855 - val_loss: 0.0052
+Epoch 3/25
+5109/5109 ━━━━━━━━━━━━━━━━━━━━ 1336s 261ms/step - accuracy: 0.9991 - dice_coef: 0.7133 - iou: 0.6111 - loss: 0.0036 - val_accuracy: 0.9987 - val_dice_coef: 0.5915 - val_iou: 0.4804 - val_loss: 0.0058
+Epoch 4/25
+5109/5109 ━━━━━━━━━━━━━━━━━━━━ 1337s 262ms/step - accuracy: 0.9992 - dice_coef: 0.7242 - iou: 0.6235 - loss: 0.0035 - val_accuracy: 0.9987 - val_dice_coef: 0.5861 - val_iou: 0.4837 - val_loss: 0.0059
+Epoch 5/25
+5109/5109 ━━━━━━━━━━━━━━━━━━━━ 1338s 262ms/step - accuracy: 0.9992 - dice_coef: 0.7380 - iou: 0.6373 - loss: 0.0034 - val_accuracy: 0.9986 - val_dice_coef: 0.6052 - val_iou: 0.5000 - val_loss: 0.0060
+Epoch 6/25
+5109/5109 ━━━━━━━━━━━━━━━━━━━━ 1340s 262ms/step - accuracy: 0.9992 - dice_coef: 0.7407 - iou: 0.6413 - loss: 0.0033 - val_accuracy: 0.9987 - val_dice_coef: 0.6026 - val_iou: 0.4975 - val_loss: 0.0057
+Epoch 7/25
+5109/5109 ━━━━━━━━━━━━━━━━━━━━ 1337s 262ms/step - accuracy: 0.9992 - dice_coef: 0.7521 - iou: 0.6528 - loss: 0.0032 - val_accuracy: 0.9987 - val_dice_coef: 0.5944 - val_iou: 0.4925 - val_loss: 0.0063

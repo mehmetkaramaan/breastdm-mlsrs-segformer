@@ -1,0 +1,7 @@
+# Original package versions were not recorded.
+tensorflow
+numpy
+matplotlib
+scipy
+keras-tuner
+jupyterlab
