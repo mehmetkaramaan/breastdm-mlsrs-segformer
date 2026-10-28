@@ -1,9 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras import layers
 
-# ════════════════════════════════════════════════════════════════════════════
-# 1. PatchEmbedding with Adaptive Patch Weighting (Equation 1 & 2 in paper)
-# ════════════════════════════════════════════════════════════════════════════
+
 class PatchEmbedding(layers.Layer):
     """
     Conv2D projection + learnable patch_weight + LayerNorm.
@@ -20,39 +18,36 @@ class PatchEmbedding(layers.Layer):
             strides=stride, padding="same"
         )
         self.norm = layers.LayerNormalization(epsilon=1e-6)
-        # patch_weight: (1, num_patches, embed_dim) – broadcast over batch
-        self.patch_weight = None   # Assigned in build()
+
+        self.patch_weight = None   
 
     def build(self, input_shape):
-        # Compute the spatial token count dynamically.
-        # Learn one channel-weight vector shared across tokens.
+
+
         self.patch_weight = self.add_weight(
             name="patch_weight",
-            shape=(1, 1, self.embed_dim),   # Broadcast to (B, N, C).
+            shape=(1, 1, self.embed_dim),   
             initializer="ones",
             trainable=True
         )
         super().build(input_shape)
 
     def call(self, x):
-        # (B, H, W, C) → (B, H', W', embed_dim)
+
         x = self.proj(x)
         H, W = tf.shape(x)[1], tf.shape(x)[2]
 
-        # Flatten → (B, N, embed_dim)
+
         x_flat = tf.reshape(x, (tf.shape(x)[0], H * W, self.embed_dim))
 
-        # Adaptive patch weighting – Eq.1: X_flat_weighted = X_flat ⊙ W_patch
+
         x_flat = x_flat * self.patch_weight
 
-        # LayerNorm – Eq.2
+
         x_norm = self.norm(x_flat)
         return x_norm, H, W
 
 
-# ════════════════════════════════════════════════════════════════════════════
-# 2. Relative Positional Encoding 2D  (Eq.6 in paper)
-# ════════════════════════════════════════════════════════════════════════════
 class RelativePositionBias2D(layers.Layer):
     """
     Learn a relative positional bias for each patch pair (i, j).
@@ -62,7 +57,7 @@ class RelativePositionBias2D(layers.Layer):
         super().__init__(**kwargs)
         self.num_heads           = num_heads
         self.max_relative_pos    = max_relative_position
-        # 2*max_rel_pos - 1 distinct relative distances per axis
+
         table_size = 2 * max_relative_position - 1
         self.relative_height = self.add_weight(
             name="rel_height", shape=(table_size, num_heads),
@@ -77,33 +72,30 @@ class RelativePositionBias2D(layers.Layer):
         """Returns RPE bias of shape (num_heads, H*W, H*W)."""
         coords_h = tf.range(H)
         coords_w = tf.range(W)
-        # meshgrid → (H, W) → flatten → (H*W,)
+
         grid_h, grid_w = tf.meshgrid(coords_h, coords_w, indexing='ij')
-        grid_h = tf.reshape(grid_h, (-1,))  # (N,)
+        grid_h = tf.reshape(grid_h, (-1,))  
         grid_w = tf.reshape(grid_w, (-1,))
 
-        # relative coords → clipped to [-max+1, max-1]
+
         S = self.max_relative_pos - 1
         rel_h = tf.clip_by_value(
             grid_h[:, None] - grid_h[None, :], -(S), S
-        ) + S   # (N, N), range [0, 2*max-2]
+        ) + S   
         rel_w = tf.clip_by_value(
             grid_w[:, None] - grid_w[None, :], -(S), S
         ) + S
 
-        # Lookup biases – shapes (N, N, num_heads)
+
         bias_h = tf.gather(self.relative_height, rel_h)
         bias_w = tf.gather(self.relative_width,  rel_w)
-        bias   = bias_h + bias_w   # (N, N, num_heads)
+        bias   = bias_h + bias_w   
 
-        # → (num_heads, N, N)
+
         bias = tf.transpose(bias, (2, 0, 1))
         return bias
 
 
-# ════════════════════════════════════════════════════════════════════════════
-# 3. Hausdorff-bias Multi-Head Attention  (Eq.3, 4, 7 in paper)
-# ════════════════════════════════════════════════════════════════════════════
 class HausdorffMultiHeadAttention(layers.Layer):
     """
     Standard MHA + Hausdorff spatial bias + RPE bias.
@@ -135,17 +127,17 @@ class HausdorffMultiHeadAttention(layers.Layer):
         coords_h = tf.cast(tf.range(H), tf.float32)
         coords_w = tf.cast(tf.range(W), tf.float32)
         gh, gw   = tf.meshgrid(coords_h, coords_w, indexing='ij')
-        gh = tf.reshape(gh, (-1,))  # (N,)
+        gh = tf.reshape(gh, (-1,))  
         gw = tf.reshape(gw, (-1,))
 
-        # Pairwise Euclidean distances → (N, N)
+
         dh = gh[:, None] - gh[None, :]
         dw = gw[:, None] - gw[None, :]
         D  = tf.sqrt(dh**2 + dw**2)
 
         eps   = 1e-6
-        B_hd  = -D / (tf.reduce_max(D) + eps)   # Eq.3
-        # (1, 1, N, N) for broadcasting
+        B_hd  = -D / (tf.reduce_max(D) + eps)   
+
         return B_hd[None, None, :, :]
 
     def call(self, x, rpe_bias=None, H=None, W=None):
@@ -158,36 +150,33 @@ class HausdorffMultiHeadAttention(layers.Layer):
         K = tf.reshape(self.k_proj(x), (B, N, nh, hd))
         V = tf.reshape(self.v_proj(x), (B, N, nh, hd))
 
-        # (B, nh, N, hd)
+
         Q = tf.transpose(Q, (0,2,1,3))
         K = tf.transpose(K, (0,2,1,3))
         V = tf.transpose(V, (0,2,1,3))
 
-        # Raw attention scores
-        S = tf.matmul(Q, K, transpose_b=True) * self.scale   # (B, nh, N, N)
 
-        # Hausdorff bias – Eq.4
+        S = tf.matmul(Q, K, transpose_b=True) * self.scale   
+
+
         if H is not None and W is not None:
             S = S + tf.cast(self._hausdorff_bias(H, W), S.dtype)
 
-        # RPE bias – Eq.7
+
         if rpe_bias is not None:
-            # rpe_bias: (nh, N, N) → (1, nh, N, N)
+
             S = S + tf.cast(rpe_bias[None], S.dtype)
 
-        # Stabilize & softmax
+
         S = S - tf.reduce_max(S, axis=-1, keepdims=True)
         attn = tf.nn.softmax(S)
 
-        out = tf.matmul(attn, V)               # (B, nh, N, hd)
-        out = tf.transpose(out, (0,2,1,3))     # (B, N, nh, hd)
+        out = tf.matmul(attn, V)               
+        out = tf.transpose(out, (0,2,1,3))     
         out = tf.reshape(out, (B, N, nh*hd))
         return self.out(out)
 
 
-# ════════════════════════════════════════════════════════════════════════════
-# 4. MixFFN with DepthwiseConv2D  (Eq.5 in paper)
-# ════════════════════════════════════════════════════════════════════════════
 class MixFFN(layers.Layer):
     """
     fc1 → GELU → reshape → DepthwiseConv2D → flatten → LN → fc2
@@ -205,20 +194,17 @@ class MixFFN(layers.Layer):
         self.fc2   = layers.Dense(embed_dim)
 
     def call(self, x, H, W):
-        u = self.act(self.fc1(x))                           # (B, N, exp)
-        # Reshape to spatial for depthwise conv
+        u = self.act(self.fc1(x))                           
+
         B   = tf.shape(u)[0]
         exp = tf.shape(u)[-1]
-        u_s = tf.reshape(u, (B, H, W, exp))                 # (B,H,W,exp)
-        u_s = self.dwconv(u_s)                              # Eq.5
+        u_s = tf.reshape(u, (B, H, W, exp))                 
+        u_s = self.dwconv(u_s)                              
         u   = tf.reshape(u_s, (B, H*W, exp))
         u   = self.norm(u)
         return self.fc2(u)
 
 
-# ════════════════════════════════════════════════════════════════════════════
-# 5. TransformerEncoderLayer – ties everything together
-# ════════════════════════════════════════════════════════════════════════════
 class TransformerEncoderLayer(layers.Layer):
     def __init__(self, embed_dim, num_heads, max_rel_pos=32, **kwargs):
         super().__init__(**kwargs)
@@ -231,12 +217,12 @@ class TransformerEncoderLayer(layers.Layer):
 
     def call(self, x, H, W, training=False):
         rpe_bias = self.rpe(H, W)
-        # Attention sub-layer
+
         x = x + self.drop(
             self.attn(self.norm1(x), rpe_bias=rpe_bias, H=H, W=W),
             training=training
         )
-        # FFN sub-layer
+
         x = x + self.drop(
             self.ffn(self.norm2(x), H, W),
             training=training

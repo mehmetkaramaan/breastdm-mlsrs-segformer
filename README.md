@@ -15,10 +15,9 @@ The saved notebook reports the following image–mask pair counts. These are ima
 | Test | 7,089 | 7,089 |
 | Total | 29,512 | 29,512 |
 
-- Resize images and masks to **256 × 256**; normalize image intensities to [0, 1].
-- Resize masks with nearest-neighbor interpolation, threshold at 127, and one-hot encode two classes.
-- Apply random horizontal/vertical flips, brightness changes, and contrast changes to training data.
-- Use a `tf.data` pipeline with batch size **4**, parallel mapping, and prefetching.
+Resize images and masks to **256 × 256**; normalize image intensities to [0, 1]. Resize masks with nearest-neighbor interpolation, threshold at 127, and one-hot encode two classes.
+
+Apply random horizontal/vertical flips, brightness changes, and contrast changes to training data. Use a `tf.data` pipeline with batch size **4**, parallel mapping, and prefetching.
 
 ## Model and training
 
@@ -50,19 +49,19 @@ Left: input image. Center: reference mask. Right: predicted mask from the tuned 
 
 ## Evaluation and reproducibility notes
 
-- The notebook generates predictions for 7,089 test images, but does not provide a saved aggregate test Dice/IoU evaluation. No test score is claimed here.
-- Saved directory-inspection output lists `BreaDM-Be-1801/SUB1/p-032.jpg` in both training and test. Check patient identifiers, image hashes, and split construction before treating test evaluation as independent. The data itself was not supplied for this audit.
-- Images and masks are paired by independently sorting file paths. Verify matching relative paths before further experiments.
-- Dice and IoU functions aggregate foreground pixels within each batch; they are not explicitly per-patient or per-image averages. Pixel accuracy is therefore not presented as the headline result.
-- The notebook's function named `compute_hd95` multiplies maximum symmetric Hausdorff distance by 0.95; it does not calculate a 95th-percentile surface distance. Its empty-mask handling also returns zero. Those numbers are excluded from the reported results.
-- The tuner declares `expand_ratio`, but does not pass it into the model blocks. Only learning rate is demonstrably applied as a tuned setting.
-- The supplied notebook contains state-dependent cell ordering and a manually assembled baseline history. Its calculations and cell order are preserved in the translated edition; it is not a verified clean-run pipeline.
+The notebook generates predictions for 7,089 test images, but does not provide a saved aggregate test Dice/IoU evaluation. No test score is claimed here. Saved directory-inspection output lists `BreaDM-Be-1801/SUB1/p-032.jpg` in both training and test. Check patient identifiers, image hashes, and split construction before treating test evaluation as independent. The data itself was not supplied for this audit.
+
+Images and masks are paired by independently sorting file paths. Verify matching relative paths before further experiments. Dice and IoU functions aggregate foreground pixels within each batch; they are not explicitly per-patient or per-image averages. Pixel accuracy is therefore not presented as the headline result.
+
+The notebook's function named `compute_hd95` multiplies maximum symmetric Hausdorff distance by 0.95; it does not calculate a 95th-percentile surface distance. Its empty-mask handling also returns zero. Those numbers are excluded from the reported results. The tuner declares `expand_ratio`, but does not pass it into the model blocks. Only learning rate is demonstrably applied as a tuned setting.
+
+The supplied notebook contains state-dependent cell ordering and a manually assembled baseline history. Its calculations and cell order are preserved in the translated edition; it is not a verified clean-run pipeline.
 
 ## Files and use
 
-- [`breastdm_mlsrs_segformer.ipynb`](breastdm_mlsrs_segformer.ipynb): English edition of the experiment notebook; outputs cleared to remove untranslated figures.
-- [`tuned_metrics.csv`](tuned_metrics.csv): seven epochs transcribed programmatically from saved training logs, at their displayed precision.
-- Figures: English training figures regenerated from recorded logs and a validation example extracted unchanged from the notebook.
+[`breastdm_mlsrs_segformer.ipynb`](breastdm_mlsrs_segformer.ipynb): English edition of the experiment notebook; outputs cleared to remove untranslated figures. [`tuned_metrics.csv`](tuned_metrics.csv): seven epochs transcribed programmatically from saved training logs, at their displayed precision.
+
+Figures: English training figures regenerated from recorded logs and a validation example extracted unchanged from the notebook.
 
 The original experiment uses a Kaggle dataset path stored in `ROOT`. Reproduction requires the BreastDM images and masks, access to the dataset under its applicable terms, the recorded custom layer definitions, and TensorFlow/Keras, NumPy, Matplotlib, SciPy, and Keras Tuner. Exact package versions, trained weights, and random seeds were not supplied. Training was not rerun while preparing this project presentation.
 

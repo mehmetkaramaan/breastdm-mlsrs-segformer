@@ -22,15 +22,15 @@ def parse_image(img_path, mask_path):
     return img, mask
 
 def augment(image, mask):
-    # Random horizontal flip
+
     if tf.random.uniform(()) > 0.5:
         image = tf.image.flip_left_right(image)
         mask  = tf.image.flip_left_right(mask)
-    # Random vertical flip
+
     if tf.random.uniform(()) > 0.5:
         image = tf.image.flip_up_down(image)
         mask  = tf.image.flip_up_down(mask)
-    # Random brightness and contrast
+
     image = tf.image.random_brightness(image, max_delta=0.1)
     image = tf.image.random_contrast(image, lower=0.9, upper=1.1)
     image = tf.clip_by_value(image, 0.0, 1.0)
@@ -52,7 +52,7 @@ def load_dataset(root, split="train"):
     print(f"[{split}] IMG: {len(img_paths)}  MASK: {len(mask_paths)}")
     ds = tf.data.Dataset.from_tensor_slices((img_paths, mask_paths))
     ds = ds.map(parse_image, num_parallel_calls=tf.data.AUTOTUNE)
-    if split == "train":                                          # Training split only
+    if split == "train":                                          
         ds = ds.map(augment, num_parallel_calls=tf.data.AUTOTUNE)
     ds = ds.batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
     return ds
